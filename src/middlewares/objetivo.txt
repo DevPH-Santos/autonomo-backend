@@ -1,0 +1,12 @@
+Middlewares são usados para tratar requisições antes de chegar nas rotas, como autenticação.
+
+export function authMiddleware(req, res, next) {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).json({ erro: "Não autorizado" });
+  }
+
+  // valida token (ex: JWT)
+  next(); // deixa continuar
+}

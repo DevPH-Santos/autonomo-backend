@@ -1,0 +1,10 @@
+São funções reutilizáveis que você usa em vários lugares do sistema.
+
+export function formatarMoeda(valor) {
+  return `R$ ${valor.toFixed(2)}`;
+}
+
+
+export function formatarData(data) {
+  return new Date(data).toLocaleDateString('pt-BR');
+}
