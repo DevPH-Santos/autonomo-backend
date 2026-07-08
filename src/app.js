@@ -1,6 +1,7 @@
 import express from "express"
 import cors from "cors"
 import authRoutes from "./routes/authRoutes.js"
+import clienteRoutes from "./routes/clienteRoutes.js"
 
 const app = express()
 
@@ -29,5 +30,6 @@ app.get("/", (req, res) => {
  * futuramente: POST /auth/login
 */
 app.use("/auth", authRoutes)
+app.use("/clientes", clienteRoutes)
 
 export default app
