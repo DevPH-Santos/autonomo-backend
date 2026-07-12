@@ -15,6 +15,14 @@ export async function registrarCliente(req, res) {
     try {
         console.log("📝 POST /clientes - Cadastrando novo cliente...")
         
+        const idUsuario = req.user?.id
+        
+        if (!idUsuario) {
+            return res.status(401).json({
+                erro: "Usuário não autenticado"
+            })
+        }
+
         const { 
             endereco_cliente, 
             frequencia_cliente, 
@@ -46,7 +54,8 @@ export async function registrarCliente(req, res) {
             bairro_cliente, 
             tipo_contratacao_cliente, 
             valor_visita_cliente, 
-            observacao_cliente 
+            observacao_cliente,
+            fk_usuario_cliente: idUsuario  // ✅ ADICIONADO
         })
 
         console.log("✅ Cliente cadastrado com sucesso!")
@@ -75,8 +84,15 @@ export async function listarClientes(req, res) {
     try {
         console.log("📖 GET /clientes - Listando todos os clientes...")
         
-        const idUsuario = req.user.id
-        const clientes = await selectCliente()
+        const idUsuario = req.user?.id
+        
+        if (!idUsuario) {
+            return res.status(401).json({
+                erro: "Usuário não autenticado"
+            })
+        }
+
+        const clientes = await selectCliente(idUsuario)  // ✅ PASSANDO idUsuario
 
         console.log(`✅ ${clientes.length} clientes encontrados`)
         return res.status(200).json({

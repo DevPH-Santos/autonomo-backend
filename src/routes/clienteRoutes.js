@@ -17,6 +17,7 @@ const router = Router()
 /**
  * POST /clientes
  * Cria um novo cliente
+ * Requer autenticação
  * 
  * Body:
  * {
@@ -32,13 +33,14 @@ const router = Router()
  *   "observacao_cliente": "Cliente VIP"
  * }
  */
-router.post("/", registrarCliente)
+router.post("/", autenticar, registrarCliente)  // ✅ middleware ANTES do controller
 
 /**
  * GET /clientes
- * Lista todos os clientes
+ * Lista todos os clientes do usuário autenticado
+ * Requer autenticação
  */
-router.get("/", listarClientes, autenticar)
+router.get("/", autenticar, listarClientes)  // ✅ middleware ANTES do controller
 
 /**
  * GET /clientes/:id
