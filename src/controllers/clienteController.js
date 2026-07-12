@@ -75,6 +75,7 @@ export async function listarClientes(req, res) {
     try {
         console.log("📖 GET /clientes - Listando todos os clientes...")
         
+        const idUsuario = req.user.id
         const clientes = await selectCliente()
 
         console.log(`✅ ${clientes.length} clientes encontrados`)

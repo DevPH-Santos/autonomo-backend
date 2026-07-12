@@ -6,6 +6,7 @@ import {
     editarCliente, 
     excluirCliente 
 } from "../controllers/clienteController.js";
+import { autenticar } from "../middlewares/authMiddleware.js";
 
 /**
  * Agrupa todas as rotas relacionadas aos clientes.
@@ -37,7 +38,7 @@ router.post("/", registrarCliente)
  * GET /clientes
  * Lista todos os clientes
  */
-router.get("/", listarClientes)
+router.get("/", listarClientes, autenticar)
 
 /**
  * GET /clientes/:id

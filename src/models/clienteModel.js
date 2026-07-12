@@ -1,4 +1,5 @@
 import pool from "../config/db.js"
+import { cadastrarUsuario } from "../services/authService.js"
 
 /**
  * Cria um novo cliente no banco de dados.
@@ -14,7 +15,8 @@ export async function criarCliente(dadosCliente) {
         bairro_cliente,
         tipo_contratacao_cliente,
         valor_visita_cliente,
-        observacao_cliente
+        observacao_cliente,
+        fk_usuario_cliente
     } = dadosCliente
 
     const sql = `
@@ -28,9 +30,10 @@ export async function criarCliente(dadosCliente) {
             bairro_cliente, 
             tipo_contratacao_cliente, 
             valor_visita_cliente, 
-            observacao_cliente
+            observacao_cliente,
+            fk_usuario_cliente
         )
-        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
 
     const [result] = await pool.execute(sql, [
@@ -43,7 +46,8 @@ export async function criarCliente(dadosCliente) {
         bairro_cliente,
         tipo_contratacao_cliente,
         valor_visita_cliente,
-        observacao_cliente
+        observacao_cliente,
+        fk_usuario_cliente
     ])
 
     return result.insertId
@@ -65,13 +69,15 @@ export async function deletarCliente(ID_cliente) {
 
 /**
  * Seleciona todos os clientes.
+ * deve receber ID do usuario para fazer select somente dos clientes dele
  */
-export async function selectCliente() {
+export async function selectCliente(idUsuario) {
     const sql = `
         SELECT * FROM cliente
+        WHERE fk_usuario_cliente = ?
     `
 
-    const [clientes] = await pool.execute(sql)
+    const [clientes] = await pool.execute(sql, [idUsuario])
     
     return clientes
 }
@@ -109,7 +115,7 @@ export async function updateCliente(ID_cliente, dadosCliente) {
         "observacao_cliente"
     ]
 
-    // Filtra apenas os campos que foram realmente enviados (não undefined)
+    // Filtra apenas os campos que foram realmente enviados
     const camposAtualizacao = {}
     const valores = []
 
