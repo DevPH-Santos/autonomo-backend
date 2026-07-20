@@ -1,12 +1,13 @@
-import { 
-    cadastrarProduto, 
+import {
+    cadastrarProduto,
     atualizarProduto,
     deletarProduto
-} from "../services/produtoService.js";
-import { 
-    selectProduto, 
-    preencherCamposProduto 
-} from "../models/produtoModel.js";
+} from "../services/produtoService.js"
+
+import {
+    selectProduto,
+    preencherCamposProduto
+} from "../models/produtoModel.js"
 
 /**
  * CREATE - Cadastra um novo produto
@@ -14,62 +15,50 @@ import {
 export async function registrarProduto(req, res) {
     try {
         console.log("📝 POST /produtos - Cadastrando novo produto...")
-        
+
         const idUsuario = req.user?.id
-        
+
         if (!idUsuario) {
             return res.status(401).json({
                 erro: "Usuário não autenticado"
             })
         }
 
-        const { 
-            nome_produto, 
-            quantidade_produto, 
-            valor_produto, 
-            unidade_medida 
+        const {
+            nome_produto,
+            quantidade_produto,
+            valor_produto,
+            unidade_medida
         } = req.body
 
         // Validação de campos obrigatórios
-        if (!nome_produto || quantidade_produto === undefined || !valor_produto || !unidade_medida) {
-            console.warn("⚠️ Campos obrigatórios faltando")
+        if (!nome_produto) {
+            console.warn("⚠️ Campo obrigatório faltando")
             return res.status(400).json({
-                erro: "Nome, quantidade, valor e unidade de medida são obrigatórios."
+                erro: "Nome do produto é obrigatório."
             })
         }
 
-        // Validações adicionais
-        if (quantidade_produto < 0) {
-            return res.status(400).json({
-                erro: "Quantidade não pode ser negativa."
-            })
-        }
-
-        if (valor_produto < 0) {
-            return res.status(400).json({
-                erro: "Valor não pode ser negativo."
-            })
-        }
-
-        const produtoCriado = await cadastrarProduto({ 
-            nome_produto, 
-            quantidade_produto, 
-            valor_produto, 
+        const produtoCriado = await cadastrarProduto({
+            nome_produto,
+            quantidade_produto,
+            valor_produto,
             unidade_medida,
-            fk_usuario_produto: idUsuario  // ✅ ADICIONADO
+            fk_usuario_produto: idUsuario
         })
 
         console.log("✅ Produto cadastrado com sucesso!")
         return res.status(201).json({
             mensagem: "Produto cadastrado com sucesso.",
-            produto: produtoCriado,
+            produto: produtoCriado
         })
 
     } catch (error) {
         console.error("❌ Erro em registrarProduto:", error)
+
         const statusCode = error.statusCode || 500
-        const mensagem = statusCode === 500 
-            ? "Erro interno do servidor." 
+        const mensagem = statusCode === 500
+            ? "Erro interno do servidor."
             : error.message
 
         return res.status(statusCode).json({
@@ -84,16 +73,16 @@ export async function registrarProduto(req, res) {
 export async function listarProdutos(req, res) {
     try {
         console.log("📖 GET /produtos - Listando todos os produtos...")
-        
+
         const idUsuario = req.user?.id
-        
+
         if (!idUsuario) {
             return res.status(401).json({
                 erro: "Usuário não autenticado"
             })
         }
 
-        const produtos = await selectProduto(idUsuario)  // ✅ PASSANDO idUsuario
+        const produtos = await selectProduto(idUsuario)
 
         console.log(`✅ ${produtos.length} produtos encontrados`)
         return res.status(200).json({
@@ -103,9 +92,10 @@ export async function listarProdutos(req, res) {
 
     } catch (error) {
         console.error("❌ Erro em listarProdutos:", error)
+
         const statusCode = error.statusCode || 500
-        const mensagem = statusCode === 500 
-            ? "Erro interno do servidor." 
+        const mensagem = statusCode === 500
+            ? "Erro interno do servidor."
             : error.message
 
         return res.status(statusCode).json({
@@ -120,6 +110,7 @@ export async function listarProdutos(req, res) {
 export async function obterProduto(req, res) {
     try {
         const { id } = req.params
+
         console.log(`📖 GET /produtos/${id} - Obtendo produto...`)
 
         if (!id) {
@@ -145,9 +136,10 @@ export async function obterProduto(req, res) {
 
     } catch (error) {
         console.error("❌ Erro em obterProduto:", error)
+
         const statusCode = error.statusCode || 500
-        const mensagem = statusCode === 500 
-            ? "Erro interno do servidor." 
+        const mensagem = statusCode === 500
+            ? "Erro interno do servidor."
             : error.message
 
         return res.status(statusCode).json({
@@ -163,26 +155,13 @@ export async function editarProduto(req, res) {
     try {
         const { id } = req.params
         const dadosAtualizacao = req.body
-        
+
         console.log(`✏️ PUT /produtos/${id} - Atualizando produto...`)
 
         if (!id) {
             console.warn("⚠️ ID não fornecido")
             return res.status(400).json({
                 erro: "ID do produto é obrigatório."
-            })
-        }
-
-        // Validações adicionais se forem atualizados
-        if (dadosAtualizacao.quantidade_produto !== undefined && dadosAtualizacao.quantidade_produto < 0) {
-            return res.status(400).json({
-                erro: "Quantidade não pode ser negativa."
-            })
-        }
-
-        if (dadosAtualizacao.valor_produto !== undefined && dadosAtualizacao.valor_produto < 0) {
-            return res.status(400).json({
-                erro: "Valor não pode ser negativo."
             })
         }
 
@@ -193,9 +172,10 @@ export async function editarProduto(req, res) {
 
     } catch (error) {
         console.error("❌ Erro em editarProduto:", error)
+
         const statusCode = error.statusCode || 500
-        const mensagem = statusCode === 500 
-            ? "Erro interno do servidor." 
+        const mensagem = statusCode === 500
+            ? "Erro interno do servidor."
             : error.message
 
         return res.status(statusCode).json({
@@ -210,7 +190,7 @@ export async function editarProduto(req, res) {
 export async function excluirProduto(req, res) {
     try {
         const { id } = req.params
-        
+
         console.log(`🗑️ DELETE /produtos/${id} - Deletando produto...`)
 
         if (!id) {
@@ -227,9 +207,10 @@ export async function excluirProduto(req, res) {
 
     } catch (error) {
         console.error("❌ Erro em excluirProduto:", error)
+
         const statusCode = error.statusCode || 500
-        const mensagem = statusCode === 500 
-            ? "Erro interno do servidor." 
+        const mensagem = statusCode === 500
+            ? "Erro interno do servidor."
             : error.message
 
         return res.status(statusCode).json({

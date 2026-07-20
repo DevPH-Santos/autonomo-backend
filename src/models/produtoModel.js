@@ -1,116 +1,123 @@
-import conexao from "../config/database.js";
+import pool from "../config/db.js"
 
 /**
- * Seleciona todos os produtos de um usuário específico
- * @param {number} idUsuario - ID do usuário
- * @returns {Promise<Array>} Lista de produtos do usuário
+ * Cria um novo produto no banco de dados.
+ */
+export async function criarProduto(dadosProduto) {
+    const {
+        nome_produto,
+        quantidade_produto,
+        valor_produto,
+        unidade_medida,
+        fk_usuario_produto
+    } = dadosProduto
+
+    const sql = `
+        INSERT INTO produto(
+            nome_produto,
+            quantidade_produto,
+            valor_produto,
+            unidade_medida,
+            fk_usuario_produto
+        )
+        VALUES (?, ?, ?, ?, ?)
+    `
+
+    const [result] = await pool.execute(sql, [
+        nome_produto,
+        quantidade_produto,
+        valor_produto,
+        unidade_medida,
+        fk_usuario_produto
+    ])
+
+    return result.insertId
+}
+
+/**
+ * Deleta um produto pelo ID.
+ */
+export async function deletarProduto(ID_produto) {
+    const sql = `
+        DELETE FROM produto
+        WHERE ID_produto = ?
+    `
+
+    const [result] = await pool.execute(sql, [ID_produto])
+
+    return result.affectedRows > 0
+}
+
+/**
+ * Seleciona todos os produtos do usuário.
  */
 export async function selectProduto(idUsuario) {
-    try {
-        const sql = `
-            SELECT ID_produto, nome_produto, quantidade_produto, 
-                   valor_produto, unidade_medida, fk_usuario_produto
-            FROM produto 
-            WHERE fk_usuario_produto = ?
-            ORDER BY nome_produto ASC
-        `
+    const sql = `
+        SELECT * FROM produto
+        WHERE fk_usuario_produto = ?
+    `
 
-        const [produtos] = await conexao.promise().query(sql, [idUsuario])
+    const [produtos] = await pool.execute(sql, [idUsuario])
 
-        return produtos
-
-    } catch (error) {
-        console.error("❌ Erro em selectProduto (model):", error)
-        throw {
-            statusCode: 500,
-            message: "Erro ao listar produtos"
-        }
-    }
+    return produtos
 }
 
 /**
- * Preenche todos os campos de um produto específico pelo ID
- * @param {number} idProduto - ID do produto
- * @returns {Promise<Object>} Dados completos do produto
+ * Seleciona um produto específico pelo ID.
  */
-export async function preencherCamposProduto(idProduto) {
-    try {
-        const sql = `
-            SELECT ID_produto, nome_produto, quantidade_produto, 
-                   valor_produto, unidade_medida, fk_usuario_produto
-            FROM produto 
-            WHERE ID_produto = ?
-        `
+export async function preencherCamposProduto(ID_produto) {
+    const sql = `
+        SELECT * FROM produto
+        WHERE ID_produto = ?
+    `
 
-        const [resultado] = await conexao.promise().query(sql, [idProduto])
+    const [produtos] = await pool.execute(sql, [ID_produto])
 
-        // Retorna o primeiro resultado ou null se não encontrado
-        return resultado.length > 0 ? resultado[0] : null
-
-    } catch (error) {
-        console.error("❌ Erro em preencherCamposProduto (model):", error)
-        throw {
-            statusCode: 500,
-            message: "Erro ao obter dados do produto"
-        }
-    }
+    return produtos[0] || null
 }
 
 /**
- * OPCIONAL: Busca produtos por nome (útil para autocomplete)
- * @param {string} nomeProduto - Nome ou parte do nome
- * @param {number} idUsuario - ID do usuário
- * @returns {Promise<Array>} Produtos encontrados
+ * Atualiza apenas os campos enviados.
  */
-export async function buscarProdutosPorNome(nomeProduto, idUsuario) {
-    try {
-        const sql = `
-            SELECT ID_produto, nome_produto, quantidade_produto, 
-                   valor_produto, unidade_medida
-            FROM produto 
-            WHERE fk_usuario_produto = ? 
-            AND nome_produto LIKE ?
-            LIMIT 10
-        `
+export async function updateProduto(ID_produto, dadosProduto) {
 
-        const [produtos] = await conexao.promise().query(sql, [
-            idUsuario,
-            `%${nomeProduto}%`
-        ])
+    const camposDisponiveis = [
+        "nome_produto",
+        "quantidade_produto",
+        "valor_produto",
+        "unidade_medida"
+    ]
 
-        return produtos
+    const camposAtualizacao = {}
+    const valores = []
 
-    } catch (error) {
-        console.error("❌ Erro em buscarProdutosPorNome (model):", error)
-        throw {
-            statusCode: 500,
-            message: "Erro ao buscar produtos"
+    for (const campo of camposDisponiveis) {
+        if (dadosProduto[campo] !== undefined) {
+            camposAtualizacao[campo] = dadosProduto[campo]
+            valores.push(dadosProduto[campo])
         }
     }
-}
 
-/**
- * OPCIONAL: Calcula o valor total do estoque
- * @param {number} idUsuario - ID do usuário
- * @returns {Promise<number>} Valor total do estoque
- */
-export async function calcularValorTotalEstoque(idUsuario) {
-    try {
-        const sql = `
-            SELECT SUM(quantidade_produto * valor_produto) as total_estoque
-            FROM produto 
-            WHERE fk_usuario_produto = ?
-        `
-
-        const [resultado] = await conexao.promise().query(sql, [idUsuario])
-
-        return resultado[0]?.total_estoque || 0
-
-    } catch (error) {
-        console.error("❌ Erro em calcularValorTotalEstoque (model):", error)
-        throw {
-            statusCode: 500,
-            message: "Erro ao calcular valor total"
-        }
+    if (Object.keys(camposAtualizacao).length === 0) {
+        return false
     }
+
+    const setClauses = Object.keys(camposAtualizacao)
+        .map(campo => `${campo} = ?`)
+        .join(", ")
+
+    const sql = `
+        UPDATE produto
+        SET ${setClauses}
+        WHERE ID_produto = ?
+    `
+
+    valores.push(ID_produto)
+
+    console.log(`📝 SQL gerado: UPDATE produto SET ${setClauses} WHERE ID_produto = ?`)
+    console.log(`📝 Valores: ${valores}`)
+
+    const [result] = await pool.execute(sql, valores)
+
+    return result.affectedRows > 0
 }

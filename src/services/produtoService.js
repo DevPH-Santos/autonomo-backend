@@ -1,130 +1,97 @@
-import conexao from "../config/database.js";
+import {
+    criarProduto,
+    deletarProduto as deletarProdutoModel,
+    updateProduto
+} from "../models/produtoModel.js"
 
 /**
- * Cadastra um novo produto no banco de dados
- * @param {Object} dadosProduto - Dados do produto
- * @returns {Promise<Object>} Produto cadastrado
+ * Service responsável pelo cadastro de produtos.
  */
 export async function cadastrarProduto(dadosProduto) {
-    try {
-        const sql = `
-            INSERT INTO produto 
-            (nome_produto, quantidade_produto, valor_produto, unidade_medida, fk_usuario_produto)
-            VALUES (?, ?, ?, ?, ?)
-        `
 
-        const [resultado] = await conexao.promise().query(sql, [
-            dadosProduto.nome_produto,
-            dadosProduto.quantidade_produto,
-            dadosProduto.valor_produto,
-            dadosProduto.unidade_medida,
-            dadosProduto.fk_usuario_produto
-        ])
+    try {
+        // Validações
+        if (!dadosProduto.nome_produto || dadosProduto.nome_produto.trim() === "") {
+            const erro = new Error("Nome do produto é obrigatório.")
+            erro.statusCode = 400
+            throw erro
+        }
+
+        const idProduto = await criarProduto(dadosProduto)
 
         return {
-            ID_produto: resultado.insertId,
-            nome_produto: dadosProduto.nome_produto,
-            quantidade_produto: dadosProduto.quantidade_produto,
-            valor_produto: dadosProduto.valor_produto,
-            unidade_medida: dadosProduto.unidade_medida,
-            fk_usuario_produto: dadosProduto.fk_usuario_produto
+            id: idProduto,
+            nome: dadosProduto.nome_produto,
+            quantidade: dadosProduto.quantidade_produto,
+            valor: dadosProduto.valor_produto,
+            unidadeMedida: dadosProduto.unidade_medida
         }
 
     } catch (error) {
-        console.error("❌ Erro em cadastrarProduto (service):", error)
-        throw {
-            statusCode: 500,
-            message: "Erro ao cadastrar produto"
-        }
+        console.error("❌ Erro em cadastrarProduto:", error.message)
+        throw error
     }
 }
 
 /**
- * Atualiza dados de um produto
- * @param {number} idProduto - ID do produto
- * @param {Object} dadosAtualizacao - Dados a atualizar
- * @returns {Promise<Object>} Resultado da atualização
+ * Service para atualizar um produto.
  */
-export async function atualizarProduto(idProduto, dadosAtualizacao) {
+export async function atualizarProduto(ID_produto, dadosProduto) {
+
     try {
-        // Constrói dinamicamente a query baseado nos campos fornecidos
-        const campos = []
-        const valores = []
-
-        if (dadosAtualizacao.nome_produto !== undefined) {
-            campos.push("nome_produto = ?")
-            valores.push(dadosAtualizacao.nome_produto)
-        }
-        if (dadosAtualizacao.quantidade_produto !== undefined) {
-            campos.push("quantidade_produto = ?")
-            valores.push(dadosAtualizacao.quantidade_produto)
-        }
-        if (dadosAtualizacao.valor_produto !== undefined) {
-            campos.push("valor_produto = ?")
-            valores.push(dadosAtualizacao.valor_produto)
-        }
-        if (dadosAtualizacao.unidade_medida !== undefined) {
-            campos.push("unidade_medida = ?")
-            valores.push(dadosAtualizacao.unidade_medida)
+        if (!ID_produto) {
+            const erro = new Error("ID do produto é obrigatório.")
+            erro.statusCode = 400
+            throw erro
         }
 
-        if (campos.length === 0) {
-            return { mensagem: "Nenhum dado para atualizar" }
-        }
+        console.log(`🔄 Atualizando produto ID: ${ID_produto}`)
+        const atualizado = await updateProduto(ID_produto, dadosProduto)
 
-        valores.push(idProduto)
-
-        const sql = `UPDATE produto SET ${campos.join(", ")} WHERE ID_produto = ?`
-
-        const [resultado] = await conexao.promise().query(sql, valores)
-
-        if (resultado.affectedRows === 0) {
-            throw {
-                statusCode: 404,
-                message: "Produto não encontrado"
-            }
+        if (!atualizado) {
+            const erro = new Error("Produto não encontrado.")
+            erro.statusCode = 404
+            throw erro
         }
 
         return {
-            mensagem: "Produto atualizado com sucesso",
-            affectedRows: resultado.affectedRows
+            mensagem: "Produto atualizado com sucesso.",
+            id: ID_produto
         }
 
     } catch (error) {
-        console.error("❌ Erro em atualizarProduto (service):", error)
-        throw error.statusCode 
-            ? error 
-            : { statusCode: 500, message: "Erro ao atualizar produto" }
+        console.error("❌ Erro em atualizarProduto:", error.message)
+        throw error
     }
 }
 
 /**
- * Deleta um produto
- * @param {number} idProduto - ID do produto
- * @returns {Promise<Object>} Resultado da deleção
+ * Service para deletar um produto.
  */
-export async function deletarProduto(idProduto) {
+export async function deletarProduto(ID_produto) {
+
     try {
-        const sql = "DELETE FROM produto WHERE ID_produto = ?"
+        if (!ID_produto) {
+            const erro = new Error("ID do produto é obrigatório.")
+            erro.statusCode = 400
+            throw erro
+        }
 
-        const [resultado] = await conexao.promise().query(sql, [idProduto])
+        console.log(`🗑️ Deletando produto ID: ${ID_produto}`)
+        const deletado = await deletarProdutoModel(ID_produto)
 
-        if (resultado.affectedRows === 0) {
-            throw {
-                statusCode: 404,
-                message: "Produto não encontrado"
-            }
+        if (!deletado) {
+            const erro = new Error("Produto não encontrado.")
+            erro.statusCode = 404
+            throw erro
         }
 
         return {
-            mensagem: "Produto deletado com sucesso",
-            affectedRows: resultado.affectedRows
+            mensagem: "Produto deletado com sucesso."
         }
 
     } catch (error) {
-        console.error("❌ Erro em deletarProduto (service):", error)
-        throw error.statusCode 
-            ? error 
-            : { statusCode: 500, message: "Erro ao deletar produto" }
+        console.error("❌ Erro em deletarProduto:", error.message)
+        throw error
     }
 }
