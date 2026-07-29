@@ -10,11 +10,13 @@ import {
     preencherCamposAtendimento
 } from "../models/atendimentoModel.js"
 
+import { cadastrarPagamento } from "./pagamentoService.js"
+
 /**
  * Service responsável pelo cadastro de atendimentos.
  */
 export async function cadastrarAtendimento(dadosAtendimento) {
-    
+
     try {
         // Validações
         if (!dadosAtendimento.data_atendimento || dadosAtendimento.data_atendimento.trim() === "") {
@@ -70,7 +72,20 @@ export async function cadastrarAtendimento(dadosAtendimento) {
         }
 
         // Cria o atendimento
-        const idAtendimento = await criarAtendimento(dadosAtendimento)
+        // Cria o pagamento automaticamente com os dados do atendimento
+        const pagamentoCriado = await cadastrarPagamento({
+            valor_pgto: totalNumerico,
+            data_pgto: dadosAtendimento.data_atendimento,
+            status_pgto: dadosAtendimento.status_pgto || "Pendente",
+            forma_pgto: dadosAtendimento.forma_pgto,   // ← novo campo vindo do body
+            obs_pgto: dadosAtendimento.obs_pgto || null // ← novo campo vindo do body
+        })
+
+        // Cria o atendimento já vinculado ao pagamento
+        const idAtendimento = await criarAtendimento({
+            ...dadosAtendimento,
+            ID_pgto: pagamentoCriado.id
+        })
 
         // Adiciona os produtos ao atendimento se fornecidos
         if (Array.isArray(dadosAtendimento.produtos) && dadosAtendimento.produtos.length > 0) {
@@ -98,7 +113,7 @@ export async function cadastrarAtendimento(dadosAtendimento) {
  * Service para atualizar um atendimento.
  */
 export async function atualizarAtendimento(ID_atendimento, dadosAtendimento) {
-    
+
     try {
         if (!ID_atendimento) {
             const erro = new Error("ID do atendimento é obrigatório.")
@@ -150,7 +165,7 @@ export async function atualizarAtendimento(ID_atendimento, dadosAtendimento) {
  * Service para atualizar os produtos de um atendimento.
  */
 export async function atualizarProdutosDoAtendimento(ID_atendimento, novosProdutos) {
-    
+
     try {
         if (!ID_atendimento) {
             const erro = new Error("ID do atendimento é obrigatório.")
@@ -165,7 +180,7 @@ export async function atualizarProdutosDoAtendimento(ID_atendimento, novosProdut
         }
 
         console.log(`🛒 Atualizando produtos do atendimento ID: ${ID_atendimento}`)
-        
+
         // Verifica se o atendimento existe
         const atendimento = await preencherCamposAtendimento(ID_atendimento)
         if (!atendimento) {
@@ -199,7 +214,7 @@ export async function atualizarProdutosDoAtendimento(ID_atendimento, novosProdut
  * Service para deletar um atendimento.
  */
 export async function deletarAtendimento(ID_atendimento) {
-    
+
     try {
         if (!ID_atendimento) {
             const erro = new Error("ID do atendimento é obrigatório.")
@@ -231,7 +246,7 @@ export async function deletarAtendimento(ID_atendimento) {
  * Retorna clientes do usuário filtrando por termo de busca.
  */
 export async function buscarClientes(idUsuario, termo) {
-    
+
     try {
         if (!idUsuario) {
             const erro = new Error("ID do usuário é obrigatório.")
@@ -267,7 +282,7 @@ export async function buscarClientes(idUsuario, termo) {
  * Retorna produtos do usuário filtrando por termo de busca.
  */
 export async function buscarProdutos(idUsuario, termo) {
-    
+
     try {
         if (!idUsuario) {
             const erro = new Error("ID do usuário é obrigatório.")
@@ -303,7 +318,7 @@ export async function buscarProdutos(idUsuario, termo) {
  * Service para buscar um atendimento completo com todas as informações.
  */
 export async function obterAtendimentoCompleto(ID_atendimento) {
-    
+
     try {
         if (!ID_atendimento) {
             const erro = new Error("ID do atendimento é obrigatório.")

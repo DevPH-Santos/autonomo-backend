@@ -28,6 +28,7 @@ export async function registrarAtendimento(req, res) {
             })
         }
 
+        // 1. adicionar no destructuring
         const {
             data_atendimento,
             status_atendimento,
@@ -35,7 +36,9 @@ export async function registrarAtendimento(req, res) {
             descri_atendimento,
             ID_cliente,
             ID_pgto,
-            produtos
+            produtos,
+            forma_pgto,   // ← add
+            obs_pgto      // ← add
         } = req.body
 
         // Validação de campos obrigatórios
@@ -46,6 +49,7 @@ export async function registrarAtendimento(req, res) {
             })
         }
 
+        // 2. passar para o service
         const atendimentoCriado = await cadastrarAtendimento({
             data_atendimento,
             status_atendimento,
@@ -54,7 +58,9 @@ export async function registrarAtendimento(req, res) {
             ID_user: idUsuario,
             ID_cliente,
             ID_pgto: ID_pgto || null,
-            produtos: produtos || []
+            produtos: produtos || [],
+            forma_pgto,   // ← add
+            obs_pgto      // ← add
         })
 
         console.log("✅ Atendimento cadastrado com sucesso!")
