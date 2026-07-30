@@ -76,7 +76,7 @@ export async function cadastrarAtendimento(dadosAtendimento) {
         const pagamentoCriado = await cadastrarPagamento({
             valor_pgto: totalNumerico,
             data_pgto: dadosAtendimento.data_atendimento,
-            status_pgto: dadosAtendimento.status_pgto || "Pendente",
+            status_pgto: "Pendente",
             forma_pgto: dadosAtendimento.forma_pgto,   // ← novo campo vindo do body
             obs_pgto: dadosAtendimento.obs_pgto || null // ← novo campo vindo do body
         })
