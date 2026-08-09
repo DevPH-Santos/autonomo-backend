@@ -24,7 +24,7 @@ export async function registrarGasto(req, res) {
             })
         }
 
-        const { descricao, data, valor, id_produto } = req.body
+        const { descricao, data, valor, categoria, observacao, fk_usuario_gasto } = req.body
 
         if (!descricao) {
             console.warn("⚠️ Campo obrigatório faltando: descricao")

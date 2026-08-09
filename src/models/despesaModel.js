@@ -8,7 +8,9 @@ function formatarGasto(row) {
         id: row.ID_gasto,
         descricao: row.descri_gasto,
         data: row.data_gasto,
-        valor: row.valor_gasto
+        valor: row.valor_gasto,
+        categoria: row.categoria ?? null,   // ← nullable
+        observacao: row.observacao ?? null
     }
 }
 
@@ -16,19 +18,14 @@ function formatarGasto(row) {
  * Cria um novo gasto no banco de dados.
  */
 export async function criarGasto(dadosGasto) {
-    const { descricao, data, valor, fk_usuario_gasto } = dadosGasto
+    const { descricao, data, valor, categoria, observacao, fk_usuario_gasto } = dadosGasto
 
     const sql = `
-        INSERT INTO gasto (
-            descri_gasto,
-            data_gasto,
-            valor_gasto,
-            fk_usuario_gasto
-        )
-        VALUES (?, ?, ?, ?)
+        INSERT INTO gasto (descri_gasto, data_gasto, valor_gasto, categoria, observacao, fk_usuario_gasto)
+        VALUES (?, ?, ?, ?, ?, ?)
     `
 
-    const [result] = await pool.execute(sql, [descricao, data, valor, fk_usuario_gasto])
+    const [result] = await pool.execute(sql, [descricao, data, valor, categoria ?? null, observacao ?? null, fk_usuario_gasto])
 
     return result.insertId
 }
@@ -83,8 +80,10 @@ export async function selectGastoPorId(ID_gasto) {
 export async function updateGasto(ID_gasto, dadosGasto) {
     const mapeamento = {
         descricao: "descri_gasto",
-        data:      "data_gasto",
-        valor:     "valor_gasto"
+        data: "data_gasto",
+        valor: "valor_gasto",
+        categoria: "categoria",
+        observacao: "observacao"
     }
 
     const setClauses = []
