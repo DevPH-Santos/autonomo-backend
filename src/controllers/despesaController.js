@@ -51,6 +51,8 @@ export async function registrarGasto(req, res) {
             descricao,
             data,
             valor,
+            categoria: categoria ?? null,
+            observacao: observacao ?? null,
             fk_usuario_gasto: idUsuario
         })
 

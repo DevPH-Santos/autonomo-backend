@@ -9,8 +9,8 @@ function formatarGasto(row) {
         descricao: row.descri_gasto,
         data: row.data_gasto,
         valor: row.valor_gasto,
-        categoria: row.categoria ?? null,   // ← nullable
-        observacao: row.observacao ?? null
+        categoria: row.categoria_gasto ?? null,   // ← nullable
+        observacao: row.observacao_gasto ?? null
     }
 }
 
@@ -21,7 +21,7 @@ export async function criarGasto(dadosGasto) {
     const { descricao, data, valor, categoria, observacao, fk_usuario_gasto } = dadosGasto
 
     const sql = `
-        INSERT INTO gasto (descri_gasto, data_gasto, valor_gasto, categoria, observacao, fk_usuario_gasto)
+        INSERT INTO gasto (descri_gasto, data_gasto, valor_gasto, categoria_gasto, observacao_gasto, fk_usuario_gasto)
         VALUES (?, ?, ?, ?, ?, ?)
     `
 
@@ -82,8 +82,8 @@ export async function updateGasto(ID_gasto, dadosGasto) {
         descricao: "descri_gasto",
         data: "data_gasto",
         valor: "valor_gasto",
-        categoria: "categoria",
-        observacao: "observacao"
+        categoria: "categoria_gasto",
+        observacao: "observacao_gasto"
     }
 
     const setClauses = []

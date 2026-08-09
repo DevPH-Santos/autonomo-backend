@@ -39,7 +39,9 @@ export async function cadastrarGasto(dadosGasto) {
             id: idGasto,
             descricao: dadosGasto.descricao,
             data: dadosGasto.data,
-            valor: dadosGasto.valor
+            valor: dadosGasto.valor,
+            categoria: dadosGasto.categoria ?? null,
+            observacao: dadosGasto.observacao ?? null
         }
 
     } catch (error) {
