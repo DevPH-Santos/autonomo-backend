@@ -6,6 +6,7 @@ import produtoRoutes from "./routes/produtoRoutes.js"
 import atendimentoRoutes from "./routes/atendimentoRoutes.js"
 import pagamentoRoutes from "./routes/pagamentoRoutes.js"
 import despesasRoutes from "./routes/despesaRoutes.js"
+import lembreteRoutes from "./routes/lembreteRoutes.js"
 
 const app = express()
 
@@ -39,5 +40,6 @@ app.use("/produtos", produtoRoutes)
 app.use("/atendimentos", atendimentoRoutes)
 app.use("/pagamentos", pagamentoRoutes)
 app.use("/despesas", despesasRoutes)
+app.use("/lembretes", lembreteRoutes)
 
 export default app
