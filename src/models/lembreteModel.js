@@ -5,9 +5,7 @@ function formatarLembrete(row) {
         id: row.ID_lembrete,
         titulo: row.titulo_lembrete,
         descricao: row.descri_lembrete,
-        tipo: row.tipo_lembrete,
         status: row.status_lembrete,
-        prioridade: row.prioridade_lembrete,
         data: row.data_lembrete
     }
 }
@@ -16,34 +14,28 @@ export async function criarLembrete(dadosLembrete) {
     const {
         titulo,
         descricao,
-        tipo,
         status,
-        prioridade,
         data,
-        fk_usuario_lembrete
+        idUsuario
     } = dadosLembrete
 
     const sql = `
         INSERT INTO lembrete (
             titulo_lembrete,
             descri_lembrete,
-            tipo_lembrete,
             status_lembrete,
-            prioridade_lembrete,
             data_lembrete,
-            fk_usuario_lembrete
+            ID_user
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?)
     `
 
     const [result] = await pool.execute(sql, [
         titulo,
         descricao,
-        tipo,
         status,
-        prioridade,
         data,
-        fk_usuario_lembrete
+        idUsuario
     ])
 
     return result.insertId
@@ -53,7 +45,7 @@ export async function selectLembretes(idUsuario) {
     const sql = `
         SELECT *
         FROM lembrete
-        WHERE fk_usuario_lembrete = ?
+        WHERE ID_user = ?
         ORDER BY
             CASE
                 WHEN status_lembrete = 'Atrasado' THEN 0
@@ -72,7 +64,7 @@ export async function selectLembretePorId(ID_lembrete, idUsuario) {
     const sql = `
         SELECT *
         FROM lembrete
-        WHERE ID_lembrete = ? AND fk_usuario_lembrete = ?
+        WHERE ID_lembrete = ? AND ID_user = ?
     `
 
     const [lembretes] = await pool.execute(sql, [ID_lembrete, idUsuario])
@@ -87,12 +79,8 @@ export async function updateLembrete(ID_lembrete, idUsuario, dadosLembrete) {
         descricao: "descri_lembrete",
         descri_lembrete: "descri_lembrete",
         descricao_lembrete: "descri_lembrete",
-        tipo: "tipo_lembrete",
-        tipo_lembrete: "tipo_lembrete",
         status: "status_lembrete",
         status_lembrete: "status_lembrete",
-        prioridade: "prioridade_lembrete",
-        prioridade_lembrete: "prioridade_lembrete",
         data: "data_lembrete",
         data_lembrete: "data_lembrete"
     }
@@ -112,7 +100,7 @@ export async function updateLembrete(ID_lembrete, idUsuario, dadosLembrete) {
     const sql = `
         UPDATE lembrete
         SET ${setClauses.join(", ")}
-        WHERE ID_lembrete = ? AND fk_usuario_lembrete = ?
+        WHERE ID_lembrete = ? AND ID_user = ?
     `
 
     valores.push(ID_lembrete, idUsuario)
@@ -125,7 +113,7 @@ export async function updateLembrete(ID_lembrete, idUsuario, dadosLembrete) {
 export async function deletarLembrete(ID_lembrete, idUsuario) {
     const sql = `
         DELETE FROM lembrete
-        WHERE ID_lembrete = ? AND fk_usuario_lembrete = ?
+        WHERE ID_lembrete = ? AND ID_user = ?
     `
 
     const [result] = await pool.execute(sql, [ID_lembrete, idUsuario])

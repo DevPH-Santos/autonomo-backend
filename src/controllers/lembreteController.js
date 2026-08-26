@@ -27,7 +27,7 @@ export async function registrarLembrete(req, res) {
 
         const lembreteCriado = await cadastrarLembrete({
             ...req.body,
-            fk_usuario_lembrete: idUsuario
+            idUsuario
         })
 
         return res.status(201).json({
