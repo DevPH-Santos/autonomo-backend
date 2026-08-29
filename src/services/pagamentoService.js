@@ -8,6 +8,26 @@ import {
 
 const STATUS_PERMITIDOS = ["Pago", "Pendente", "Atrasado"]
 
+function calcularStatusPagamento(dataPgto, statusAtual) {
+    if (statusAtual === "Pago") {
+        return "Pago"
+    }
+
+    if (!dataPgto) {
+        return "Pendente"
+    }
+
+    const data = new Date(`${String(dataPgto).slice(0, 10)}T00:00:00`)
+    if (Number.isNaN(data.getTime())) {
+        return "Pendente"
+    }
+
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+
+    return data < hoje ? "Atrasado" : "Pendente"
+}
+
 /**
  * Cria um pagamento no banco.
  * Chamado automaticamente por atendimentoService ao cadastrar um atendimento.
@@ -50,10 +70,12 @@ export async function cadastrarPagamento(dadosPagamento) {
 
         console.log("💳 Criando pagamento...")
 
+        const statusCalculado = calcularStatusPagamento(data_pgto, status_pgto)
+
         const ID_pgto = await criarPagamentoModel({
             valor_pgto: valorNumerico,
             data_pgto,
-            status_pgto,
+            status_pgto: statusCalculado,
             forma_pgto: forma_pgto.trim(),
             obs_pgto: obs_pgto?.trim() || null
         })
@@ -62,7 +84,7 @@ export async function cadastrarPagamento(dadosPagamento) {
             id: ID_pgto,
             valor: valorNumerico,
             data: data_pgto,
-            status: status_pgto,
+            status: statusCalculado,
             forma: forma_pgto.trim(),
             observacao: obs_pgto || null
         }
@@ -93,7 +115,7 @@ export async function listarPagamentos(idUsuario) {
                 id: p.ID_pgto,
                 valor: parseFloat(p.valor_pgto),
                 data: p.data_pgto,
-                status: p.status_pgto,
+                status: calcularStatusPagamento(p.data_pgto, p.status_pgto),
                 forma: p.forma_pgto,
                 observacao: p.obs_pgto,
                 cliente: p.nome_cliente,
@@ -135,7 +157,7 @@ export async function obterPagamento(ID_pgto) {
             id: pagamento.ID_pgto,
             valor: parseFloat(pagamento.valor_pgto),
             data: pagamento.data_pgto,
-            status: pagamento.status_pgto,
+            status: calcularStatusPagamento(pagamento.data_pgto, pagamento.status_pgto),
             forma: pagamento.forma_pgto,
             observacao: pagamento.obs_pgto,
             cliente: pagamento.nome_cliente,
@@ -178,6 +200,17 @@ export async function atualizarPagamento(ID_pgto, dadosPagamento) {
             }
             dadosPagamento.valor_pgto = valorNumerico
         }
+
+        const pagamentoAtual = await buscarPagamentoPorId(ID_pgto)
+        if (!pagamentoAtual) {
+            const erro = new Error("Pagamento não encontrado.")
+            erro.statusCode = 404
+            throw erro
+        }
+
+        const dataPgto = dadosPagamento.data_pgto ?? pagamentoAtual.data_pgto
+        const statusPgto = dadosPagamento.status_pgto ?? pagamentoAtual.status_pgto
+        dadosPagamento.status_pgto = calcularStatusPagamento(dataPgto, statusPgto)
 
         console.log(`🔄 Atualizando pagamento ID: ${ID_pgto}`)
         const atualizado = await atualizarPagamentoModel(ID_pgto, dadosPagamento)
@@ -247,8 +280,17 @@ export async function atualizarStatusPagamento(ID_pgto, novoStatus) {
             throw erro
         }
 
-        console.log(`🔁 Atualizando status do pagamento ${ID_pgto} para "${novoStatus}"`)
-        const atualizado = await atualizarPagamentoModel(ID_pgto, { status_pgto: novoStatus })
+        const pagamentoAtual = await buscarPagamentoPorId(ID_pgto)
+        if (!pagamentoAtual) {
+            const erro = new Error("Pagamento não encontrado.")
+            erro.statusCode = 404
+            throw erro
+        }
+
+        const statusCalculado = calcularStatusPagamento(pagamentoAtual.data_pgto, novoStatus)
+
+        console.log(`🔁 Atualizando status do pagamento ${ID_pgto} para "${statusCalculado}"`)
+        const atualizado = await atualizarPagamentoModel(ID_pgto, { status_pgto: statusCalculado })
 
         if (!atualizado) {
             const erro = new Error("Pagamento não encontrado.")
@@ -259,7 +301,7 @@ export async function atualizarStatusPagamento(ID_pgto, novoStatus) {
         return {
             mensagem: `Status atualizado para "${novoStatus}".`,
             id: ID_pgto,
-            status: novoStatus
+            status: statusCalculado
         }
 
     } catch (error) {
