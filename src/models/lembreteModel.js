@@ -6,7 +6,9 @@ function formatarLembrete(row) {
         titulo: row.titulo_lembrete,
         descricao: row.descri_lembrete,
         status: row.status_lembrete,
-        data: row.data_lembrete
+        data: row.data_lembrete,
+        tipo: row.tipo_lembrete,
+        prioridade: row.prioridade_lembrete
     }
 }
 
@@ -16,6 +18,8 @@ export async function criarLembrete(dadosLembrete) {
         descricao,
         status,
         data,
+        tipo,
+        prioridade,
         idUsuario
     } = dadosLembrete
 
@@ -25,9 +29,11 @@ export async function criarLembrete(dadosLembrete) {
             descri_lembrete,
             status_lembrete,
             data_lembrete,
+            tipo_lembrete,
+            prioridade_lembrete,
             ID_user
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `
 
     const [result] = await pool.execute(sql, [
@@ -35,6 +41,8 @@ export async function criarLembrete(dadosLembrete) {
         descricao,
         status,
         data,
+        tipo,
+        prioridade,
         idUsuario
     ])
 
@@ -82,7 +90,11 @@ export async function updateLembrete(ID_lembrete, idUsuario, dadosLembrete) {
         status: "status_lembrete",
         status_lembrete: "status_lembrete",
         data: "data_lembrete",
-        data_lembrete: "data_lembrete"
+        data_lembrete: "data_lembrete",
+        tipo: "tipo_lembrete",
+        tipo_lembrete: "tipo_lembrete",
+        prioridade: "prioridade_lembrete",
+        prioridade_lembrete: "prioridade_lembrete"
     }
 
     const setClauses = []
