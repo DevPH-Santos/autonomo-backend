@@ -17,7 +17,12 @@ function calcularStatusPagamento(dataPgto, statusAtual) {
         return "Pendente"
     }
 
-    const data = new Date(`${String(dataPgto).slice(0, 10)}T00:00:00`)
+    const dataString = dataPgto instanceof Date 
+    ? dataPgto.toISOString().slice(0, 10)
+    : String(dataPgto).slice(0, 10)
+
+    const data = new Date(`${dataString}T00:00:00`)
+
     if (Number.isNaN(data.getTime())) {
         return "Pendente"
     }
