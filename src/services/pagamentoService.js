@@ -40,7 +40,7 @@ function calcularStatusPagamento(dataPgto, statusAtual) {
  */
 export async function cadastrarPagamento(dadosPagamento) {
     try {
-        const { valor_pgto, data_pgto, status_pgto, forma_pgto, obs_pgto } = dadosPagamento
+        const { valor_pgto, data_pgto, status_pgto, forma_pgto, obs_pgto, fk_usuario_pagamento } = dadosPagamento
 
         if (valor_pgto === undefined || valor_pgto === null) {
             const erro = new Error("Valor do pagamento é obrigatório.")
@@ -73,6 +73,12 @@ export async function cadastrarPagamento(dadosPagamento) {
             throw erro
         }
 
+        if (!fk_usuario_pagamento) {
+            const erro = new Error("ID do usuário é obrigatório.")
+            erro.statusCode = 400
+            throw erro
+        }
+
         console.log("💳 Criando pagamento...")
 
         const statusCalculado = calcularStatusPagamento(data_pgto, status_pgto)
@@ -82,7 +88,8 @@ export async function cadastrarPagamento(dadosPagamento) {
             data_pgto,
             status_pgto: statusCalculado,
             forma_pgto: forma_pgto.trim(),
-            obs_pgto: obs_pgto?.trim() || null
+            obs_pgto: obs_pgto?.trim() || null,
+            fk_usuario_pagamento
         })
 
         return {

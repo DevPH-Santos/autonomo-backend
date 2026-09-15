@@ -78,7 +78,8 @@ export async function cadastrarAtendimento(dadosAtendimento) {
             data_pgto: dadosAtendimento.data_atendimento,
             status_pgto: "Pendente",
             forma_pgto: dadosAtendimento.forma_pgto,   // ← novo campo vindo do body
-            obs_pgto: dadosAtendimento.obs_pgto || null // ← novo campo vindo do body
+            obs_pgto: dadosAtendimento.obs_pgto || null, // ← novo campo vindo do body
+            fk_usuario_pagamento: dadosAtendimento.ID_user
         })
 
         // Cria o atendimento já vinculado ao pagamento

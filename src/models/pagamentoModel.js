@@ -10,7 +10,8 @@ export async function criarPagamento(dadosPagamento) {
         data_pgto,
         status_pgto,
         forma_pgto,
-        obs_pgto = null
+        obs_pgto = null,
+        fk_usuario_pagamento
     } = dadosPagamento
 
     const sql = `
@@ -19,9 +20,10 @@ export async function criarPagamento(dadosPagamento) {
             data_pgto,
             status_pgto,
             forma_pgto,
-            obs_pgto
+            obs_pgto,
+            fk_usuario_pagamento
         )
-        VALUES(?, ?, ?, ?, ?)
+        VALUES(?, ?, ?, ?, ?, ?)
     `
 
     const [result] = await pool.execute(sql, [
@@ -29,7 +31,8 @@ export async function criarPagamento(dadosPagamento) {
         data_pgto,
         status_pgto,
         forma_pgto,
-        obs_pgto
+        obs_pgto,
+        fk_usuario_pagamento
     ])
 
     return result.insertId
@@ -74,9 +77,9 @@ export async function listarPagamentosDoUsuario(idUsuario) {
             a.ID_atendimento,
             a.descri_atendimento
         FROM pagamento p
-        INNER JOIN atendimento a ON a.ID_pgto = p.ID_pgto
-        INNER JOIN cliente c ON a.ID_cliente = c.ID_cliente
-        WHERE a.ID_user = ?
+        LEFT JOIN atendimento a ON a.ID_pgto = p.ID_pgto
+        LEFT JOIN cliente c ON a.ID_cliente = c.ID_cliente
+        WHERE p.fk_usuario_pagamento = ?
         ORDER BY p.data_pgto DESC
     `
 
