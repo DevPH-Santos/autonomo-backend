@@ -8,7 +8,9 @@ function formatarLembrete(row) {
         status: row.status_lembrete,
         data: row.data_lembrete,
         tipo: row.tipo_lembrete,
-        prioridade: row.prioridade_lembrete
+        prioridade: row.prioridade_lembrete,
+        categoria: row.categoria_lembrete,
+        origem: row.origem_lembrete || "manual"
     }
 }
 

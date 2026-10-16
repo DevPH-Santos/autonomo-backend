@@ -5,6 +5,8 @@ import {
     atualizarPagamento as atualizarPagamentoModel,
     deletarPagamento as deletarPagamentoModel
 } from "../models/pagamentoModel.js"
+import { sincronizarLembreteAutomatico, removerLembretesAutomaticosDoEvento } from "./notificacaoAutomaticaService.js"
+import * as lembreteAutomaticoModel from "../models/lembreteAutomaticoModel.js"
 
 const STATUS_PERMITIDOS = ["Pago", "Pendente", "Atrasado"]
 
@@ -91,6 +93,13 @@ export async function cadastrarPagamento(dadosPagamento) {
             obs_pgto: obs_pgto?.trim() || null,
             fk_usuario_pagamento
         })
+
+        await sincronizarLembreteAutomatico("pagamento", {
+            id: ID_pgto,
+            idUsuario: fk_usuario_pagamento,
+            data_pgto,
+            descricao: obs_pgto || ""
+        }, lembreteAutomaticoModel)
 
         return {
             id: ID_pgto,
@@ -233,6 +242,13 @@ export async function atualizarPagamento(ID_pgto, dadosPagamento) {
             throw erro
         }
 
+        await sincronizarLembreteAutomatico("pagamento", {
+            id: Number(ID_pgto),
+            idUsuario: pagamentoAtual.fk_usuario_pagamento,
+            data_pgto: dataPgto,
+            descricao: dadosPagamento.obs_pgto ?? pagamentoAtual.obs_pgto ?? ""
+        }, lembreteAutomaticoModel)
+
         return {
             mensagem: "Pagamento atualizado com sucesso.",
             id: ID_pgto
@@ -254,6 +270,17 @@ export async function deletarPagamento(ID_pgto) {
             erro.statusCode = 400
             throw erro
         }
+
+        const pagamentoAtual = await buscarPagamentoPorId(ID_pgto)
+        if (!pagamentoAtual) {
+            const erro = new Error("Pagamento não encontrado.")
+            erro.statusCode = 404
+            throw erro
+        }
+        await removerLembretesAutomaticosDoEvento("pagamento", {
+            id: Number(ID_pgto), idUsuario: pagamentoAtual.fk_usuario_pagamento,
+            data_pgto: pagamentoAtual.data_pgto
+        }, lembreteAutomaticoModel)
 
         console.log(`🗑️ Deletando pagamento ID: ${ID_pgto}`)
         const deletado = await deletarPagamentoModel(ID_pgto)

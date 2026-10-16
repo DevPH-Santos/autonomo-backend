@@ -11,6 +11,8 @@ import {
 } from "../models/atendimentoModel.js"
 
 import { cadastrarPagamento } from "./pagamentoService.js"
+import { sincronizarLembreteAutomatico, removerLembretesAutomaticosDoEvento } from "./notificacaoAutomaticaService.js"
+import * as lembreteAutomaticoModel from "../models/lembreteAutomaticoModel.js"
 
 /**
  * Service responsável pelo cadastro de atendimentos.
@@ -88,6 +90,13 @@ export async function cadastrarAtendimento(dadosAtendimento) {
             ID_pgto: pagamentoCriado.id
         })
 
+        await sincronizarLembreteAutomatico("atendimento", {
+            id: idAtendimento,
+            idUsuario: dadosAtendimento.ID_user,
+            data_atendimento: dadosAtendimento.data_atendimento,
+            descricao: dadosAtendimento.descri_atendimento
+        }, lembreteAutomaticoModel)
+
         // Adiciona os produtos ao atendimento se fornecidos
         if (Array.isArray(dadosAtendimento.produtos) && dadosAtendimento.produtos.length > 0) {
             await adicionarProdutosAtendimento(idAtendimento, dadosAtendimento.produtos)
@@ -142,6 +151,13 @@ export async function atualizarAtendimento(ID_atendimento, dadosAtendimento) {
             }
         }
 
+        const atendimentoAtual = await preencherCamposAtendimento(ID_atendimento)
+        if (!atendimentoAtual) {
+            const erro = new Error("Atendimento não encontrado.")
+            erro.statusCode = 404
+            throw erro
+        }
+
         console.log(`🔄 Atualizando atendimento ID: ${ID_atendimento}`)
         const atualizado = await updateAtendimento(ID_atendimento, dadosAtendimento)
 
@@ -150,6 +166,13 @@ export async function atualizarAtendimento(ID_atendimento, dadosAtendimento) {
             erro.statusCode = 404
             throw erro
         }
+
+        await sincronizarLembreteAutomatico("atendimento", {
+            id: Number(ID_atendimento),
+            idUsuario: atendimentoAtual.ID_user,
+            data_atendimento: dadosAtendimento.data_atendimento ?? atendimentoAtual.data_atendimento,
+            descricao: dadosAtendimento.descri_atendimento ?? atendimentoAtual.descri_atendimento
+        }, lembreteAutomaticoModel)
 
         return {
             mensagem: "Atendimento atualizado com sucesso.",
@@ -222,6 +245,17 @@ export async function deletarAtendimento(ID_atendimento) {
             erro.statusCode = 400
             throw erro
         }
+
+        const atendimentoAtual = await preencherCamposAtendimento(ID_atendimento)
+        if (!atendimentoAtual) {
+            const erro = new Error("Atendimento não encontrado.")
+            erro.statusCode = 404
+            throw erro
+        }
+        await removerLembretesAutomaticosDoEvento("atendimento", {
+            id: Number(ID_atendimento), idUsuario: atendimentoAtual.ID_user,
+            data_atendimento: atendimentoAtual.data_atendimento
+        }, lembreteAutomaticoModel)
 
         console.log(`🗑️ Deletando atendimento ID: ${ID_atendimento}`)
         const deletado = await deletarAtendimentoModel(ID_atendimento)
