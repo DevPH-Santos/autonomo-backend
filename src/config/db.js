@@ -12,6 +12,9 @@ const pool = mysql.createPool({
 
   waitForConnections: true,
   connectionLimit: 10,
+  // DATETIME representa data/hora civil; mantê-lo como texto evita que o fuso
+  // do processo desloque lembretes ao ler e reagendar um evento.
+  dateStrings: true,
 
   ssl: {
     rejectUnauthorized: false,
