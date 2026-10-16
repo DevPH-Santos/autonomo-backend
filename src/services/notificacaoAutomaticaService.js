@@ -13,6 +13,8 @@ export const TIPOS_DE_NOTIFICACAO = Object.freeze({
         categoria: "pagamentos",
         tipoLembrete: "pagamento",
         campoData: "data_pgto",
+        // Pagamentos cadastrados somente com data são avisados às 09:00.
+        horaPadraoEvento: 9,
         titulo: "Lembrete de pagamento"
     }
 })
@@ -64,8 +66,11 @@ export function normalizarDataNoFuso(data, fusoHorario = FUSO_HORARIO_PADRAO) {
     }
 }
 
-export function calcularDataProgramada(dataEvento, antecedenciaMinutos = ANTECEDENCIA_PADRAO_MINUTOS, fusoHorario = FUSO_HORARIO_PADRAO) {
+export function calcularDataProgramada(dataEvento, antecedenciaMinutos = ANTECEDENCIA_PADRAO_MINUTOS, fusoHorario = FUSO_HORARIO_PADRAO, opcoes = {}) {
     const data = normalizarDataNoFuso(dataEvento, fusoHorario)
+    if (opcoes.horaPadraoEvento !== undefined && data.hora === 0 && data.minuto === 0 && data.segundo === 0) {
+        data.hora = opcoes.horaPadraoEvento
+    }
     const minutos = Number(antecedenciaMinutos)
     if (!Number.isInteger(minutos) || minutos < 0) {
         throw new Error("A antecedência da notificação deve ser um número inteiro não negativo de minutos.")
@@ -95,7 +100,8 @@ export async function sincronizarLembreteAutomatico(tipo, evento, repositorio) {
     const dataProgramada = calcularDataProgramada(
         evento[definicao.campoData],
         ANTECEDENCIA_PADRAO_MINUTOS,
-        FUSO_HORARIO_PADRAO
+        FUSO_HORARIO_PADRAO,
+        { horaPadraoEvento: definicao.horaPadraoEvento }
     )
 
     await repositorio.salvarAutomatico({

@@ -13,8 +13,7 @@ export async function salvarAutomatico(lembrete) {
             data_lembrete = VALUES(data_lembrete),
             tipo_lembrete = VALUES(tipo_lembrete),
             categoria_lembrete = VALUES(categoria_lembrete),
-            chave_idempotencia = VALUES(chave_idempotencia),
-            status_lembrete = 'Pendente'
+            chave_idempotencia = VALUES(chave_idempotencia)
     `
     await pool.execute(sql, [
         lembrete.titulo, lembrete.descricao, lembrete.dataProgramada,
@@ -22,6 +21,7 @@ export async function salvarAutomatico(lembrete) {
         lembrete.tipoNotificacao, lembrete.idEventoOrigem, lembrete.chaveIdempotencia
     ])
 }
+
 
 export async function removerAutomaticos(tipoNotificacao, idEventoOrigem, idUsuario) {
     const [result] = await pool.execute(`

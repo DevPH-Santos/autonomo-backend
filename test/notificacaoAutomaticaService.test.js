@@ -33,7 +33,6 @@ test("usa antecedência padrão de um dia e preserva a hora civil", async () => 
     assert.equal(resultado.dataProgramada, "2026-10-19 14:30:00")
     assert.equal(repositorio.lembretes.size, 1)
 })
-
 test("cria pagamento com categoria correta e antecedência padrão", async () => {
     const repositorio = criarRepositorio()
     await sincronizarLembreteAutomatico("pagamento", {
@@ -70,4 +69,12 @@ test("calcula um dia antes com data ISO respeitando o fuso informado", () => {
         calcularDataProgramada("2026-10-20T17:00:00.000Z", 1440, "America/Sao_Paulo"),
         "2026-10-19 14:00:00"
     )
+})
+
+test("pagamento sem horário usa 09:00 antes de calcular a antecedência", async () => {
+    const repositorio = criarRepositorio()
+    await sincronizarLembreteAutomatico("pagamento", {
+        id: 4, idUsuario: 7, data_pgto: "2026-10-20", descricao: "Fatura sem horário"
+    }, repositorio)
+    assert.equal(repositorio.lembretes.get("pagamento:4").dataProgramada, "2026-10-19 09:00:00")
 })
