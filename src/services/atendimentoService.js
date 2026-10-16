@@ -20,6 +20,7 @@ import * as lembreteAutomaticoModel from "../models/lembreteAutomaticoModel.js"
 export async function cadastrarAtendimento(dadosAtendimento) {
 
     try {
+        validarProdutos(dadosAtendimento.produtos)
         // Validações
         if (!dadosAtendimento.data_atendimento || dadosAtendimento.data_atendimento.trim() === "") {
             const erro = new Error("Data do atendimento é obrigatória.")
@@ -202,6 +203,8 @@ export async function atualizarProdutosDoAtendimento(ID_atendimento, novosProdut
             erro.statusCode = 400
             throw erro
         }
+
+        validarProdutos(novosProdutos)
 
         console.log(`🛒 Atualizando produtos do atendimento ID: ${ID_atendimento}`)
 
@@ -391,6 +394,7 @@ export async function obterAtendimentoCompleto(ID_atendimento) {
                 nome: p.nome_produto,
                 valor: parseFloat(p.valor_produto),
                 quantidade: p.quantidade_produto,
+                quantidadeUtilizada: p.quantidade_utilizada,
                 unidade: p.unidade_medida
             }))
         }
@@ -398,5 +402,35 @@ export async function obterAtendimentoCompleto(ID_atendimento) {
     } catch (error) {
         console.error("❌ Erro em obterAtendimentoCompleto:", error.message)
         throw error
+    }
+}
+
+function validarProdutos(produtos) {
+    if (produtos === undefined) return
+
+    if (!Array.isArray(produtos)) {
+        const erro = new Error("Produtos deve ser um array.")
+        erro.statusCode = 400
+        throw erro
+    }
+
+    const ids = new Set()
+    for (const produto of produtos) {
+        const idProduto = Number(produto?.ID_produto)
+        const quantidadeUtilizada = Number(produto?.quantidade_utilizada ?? 1)
+
+        if (!Number.isInteger(idProduto) || idProduto <= 0 ||
+            !Number.isInteger(quantidadeUtilizada) || quantidadeUtilizada <= 0) {
+            const erro = new Error("Cada produto deve ter ID_produto e quantidade_utilizada inteira maior que zero.")
+            erro.statusCode = 400
+            throw erro
+        }
+
+        if (ids.has(idProduto)) {
+            const erro = new Error("Um produto não pode ser informado mais de uma vez no atendimento.")
+            erro.statusCode = 400
+            throw erro
+        }
+        ids.add(idProduto)
     }
 }

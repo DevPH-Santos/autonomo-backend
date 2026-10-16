@@ -43,17 +43,36 @@ export async function criarAtendimento(dadosAtendimento) {
 
 /**
  * Deleta um atendimento pelo ID.
- * Cascata remove automaticamente registros em tabela 'utiliza'.
+ * Antes de remover, devolve ao estoque as quantidades usadas no atendimento.
  */
 export async function deletarAtendimento(ID_atendimento) {
-    const sql = `
-        DELETE FROM atendimento
-        WHERE ID_atendimento = ?
-    `
+    const conexao = await pool.getConnection()
 
-    const [result] = await pool.execute(sql, [ID_atendimento])
-    
-    return result.affectedRows > 0
+    try {
+        await conexao.beginTransaction()
+
+        const [produtos] = await conexao.execute(`
+            SELECT ID_produto, quantidade_utilizada
+            FROM utiliza
+            WHERE ID_atendimento = ?
+            FOR UPDATE
+        `, [ID_atendimento])
+
+        await devolverProdutosAoEstoque(conexao, produtos)
+
+        const [result] = await conexao.execute(`
+            DELETE FROM atendimento
+            WHERE ID_atendimento = ?
+        `, [ID_atendimento])
+
+        await conexao.commit()
+        return result.affectedRows > 0
+    } catch (erro) {
+        await conexao.rollback()
+        throw erro
+    } finally {
+        conexao.release()
+    }
 }
 
 /**
@@ -141,30 +160,27 @@ export async function updateAtendimento(ID_atendimento, dadosAtendimento) {
 
 /**
  * Adiciona múltiplos produtos a um atendimento.
- * Recebe array de produtos com ID_produto.
+ * Recebe array de produtos com ID_produto e quantidade_utilizada.
+ * A quantidade é descontada do estoque no mesmo processo.
  */
 export async function adicionarProdutosAtendimento(ID_atendimento, produtos) {
     if (!Array.isArray(produtos) || produtos.length === 0) {
         return false
     }
 
+    const conexao = await pool.getConnection()
+
     try {
-        for (const produto of produtos) {
-            const { ID_produto } = produto
-            
-            if (!ID_produto) continue
-
-            const sql = `
-                INSERT INTO utiliza(ID_produto, ID_atendimento)
-                VALUES(?, ?)
-            `
-
-            await pool.execute(sql, [ID_produto, ID_atendimento])
-        }
+        await conexao.beginTransaction()
+        await adicionarProdutosComEstoque(conexao, ID_atendimento, produtos)
+        await conexao.commit()
         return true
     } catch (erro) {
+        await conexao.rollback()
         console.error("❌ Erro ao adicionar produtos:", erro)
-        return false
+        throw erro
+    } finally {
+        conexao.release()
     }
 }
 
@@ -193,7 +209,8 @@ export async function buscarProdutosAtendimento(ID_atendimento) {
             p.nome_produto,
             p.valor_produto,
             p.quantidade_produto,
-            p.unidade_medida
+            p.unidade_medida,
+            u.quantidade_utilizada
         FROM produto p
         INNER JOIN utiliza u ON p.ID_produto = u.ID_produto
         WHERE u.ID_atendimento = ?
@@ -321,16 +338,62 @@ export async function listarAtendimentosComCliente(idUsuario) {
  * Remove os antigos e adiciona os novos.
  */
 export async function atualizarProdutosAtendimento(ID_atendimento, novosProdutos) {
+    const conexao = await pool.getConnection()
+
     try {
-        // Remove os produtos antigos
-        await removerTodosProdutosAtendimento(ID_atendimento)
-        
-        // Adiciona os novos
-        await adicionarProdutosAtendimento(ID_atendimento, novosProdutos)
-        
+        await conexao.beginTransaction()
+
+        const [produtosAtuais] = await conexao.execute(`
+            SELECT ID_produto, quantidade_utilizada
+            FROM utiliza
+            WHERE ID_atendimento = ?
+            FOR UPDATE
+        `, [ID_atendimento])
+
+        await devolverProdutosAoEstoque(conexao, produtosAtuais)
+        await conexao.execute("DELETE FROM utiliza WHERE ID_atendimento = ?", [ID_atendimento])
+        await adicionarProdutosComEstoque(conexao, ID_atendimento, novosProdutos)
+
+        await conexao.commit()
         return true
     } catch (erro) {
+        await conexao.rollback()
         console.error("❌ Erro ao atualizar produtos:", erro)
-        return false
+        throw erro
+    } finally {
+        conexao.release()
+    }
+}
+
+async function adicionarProdutosComEstoque(conexao, ID_atendimento, produtos) {
+    for (const produto of produtos) {
+        const { ID_produto, quantidade_utilizada = 1 } = produto
+
+        const [estoqueAtualizado] = await conexao.execute(`
+            UPDATE produto
+            SET quantidade_produto = quantidade_produto - ?
+            WHERE ID_produto = ? AND quantidade_produto >= ?
+        `, [quantidade_utilizada, ID_produto, quantidade_utilizada])
+
+        if (estoqueAtualizado.affectedRows === 0) {
+            const erro = new Error("Produto não encontrado ou sem estoque suficiente.")
+            erro.statusCode = 400
+            throw erro
+        }
+
+        await conexao.execute(`
+            INSERT INTO utiliza(ID_produto, ID_atendimento, quantidade_utilizada)
+            VALUES(?, ?, ?)
+        `, [ID_produto, ID_atendimento, quantidade_utilizada])
+    }
+}
+
+async function devolverProdutosAoEstoque(conexao, produtos) {
+    for (const produto of produtos) {
+        await conexao.execute(`
+            UPDATE produto
+            SET quantidade_produto = quantidade_produto + ?
+            WHERE ID_produto = ?
+        `, [produto.quantidade_utilizada, produto.ID_produto])
     }
 }
